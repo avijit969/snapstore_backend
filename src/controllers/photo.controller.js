@@ -5,14 +5,14 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteImageByPublicId, uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 // upload image ✅
-const uploadImages = asyncHandler(async (req, res) => {
+const   uploadImages = asyncHandler(async (req, res) => {
     const photos = req.files;
     const { description, location } = req.body;
     const userId = req.user._id;
     const uploadedPhotos = [];
 
     if (!photos || photos.length === 0) {
-        return res.status(400).json({ message: 'No files uploaded' });
+        throw new ApiError(400,'No files uploaded')
     }
 
     for (const photo of photos) {
@@ -37,7 +37,7 @@ const uploadImages = asyncHandler(async (req, res) => {
 // Get all photo by user id ✅
 const getAllPhotos = asyncHandler(async (req, res) => {
     const id = req.user._id;
-    const { page, limit } = req.body;
+    const { page, limit} = req.query;
 
     if (!page || !limit) {
         return res.status(400).json({ message: 'Page and limit are required' });
@@ -45,7 +45,7 @@ const getAllPhotos = asyncHandler(async (req, res) => {
 
     const options = {
         page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 10,
+        limit: parseInt(limit, 10) || 30,
     };
 
     const myAggregate = Photo.aggregate([

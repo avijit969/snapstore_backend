@@ -1,10 +1,12 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import { ExpressAuth } from "@auth/express"
+import GitHub from "@auth/express/providers/github"
 const app = express()
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true
 }))
 app.use((req, res, next) => {
@@ -20,9 +22,13 @@ app.use(cookieParser())
 import userRouter from './routers/user.routs.js'
 import photoRouter from './routers/photo.routes.js'
 import albumRouter from './routers/album.routes.js'
+import { errorHandler } from "./middlewares/error.middlewares.js"
 //routes declaration
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/photos", photoRouter)
 app.use('/api/v1/albums', albumRouter)
 
+
+// app.use("/auth/*", ExpressAuth({ providers: [GitHub] }))
+app.use(errorHandler)
 export { app }

@@ -6,16 +6,16 @@ const photoSchema = new Schema(
         userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: true, // Assuming userId is required
+            required: true,
         },
         albumId: {
             type: Schema.Types.ObjectId,
             ref: "Album",
-            // required: true, // Assuming albumId is required
+            // required: true,
         },
         url: {
             type: String,
-            required: true, // Corrected key from 'require' to 'required'
+            required: true,
         },
         description: {
             type: String,
@@ -29,9 +29,9 @@ const photoSchema = new Schema(
         }
     },
     {
-        timestamps: true, // Adds createdAt and updatedAt fields
+        timestamps: true,
     }
 );
 photoSchema.plugin(aggregatePaginate)
-// Corrected export statement
+
 export const Photo = mongoose.model('Photo', photoSchema);

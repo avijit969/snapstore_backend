@@ -96,9 +96,10 @@ const loginUser = asyncHandler(async (req, res) => {
 })
 // is logged in
 const isLoggedIn = asyncHandler(async (req, res) => {
+  console.log("this")
   const user = await User.findById(req.user?._id)
   if (user) {
-    res.json({ isLoggedIn: true, user })
+    res.json(user)
   } else {
     res.json({ isLoggedIn: false })
   }
