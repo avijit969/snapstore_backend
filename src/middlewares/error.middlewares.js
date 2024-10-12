@@ -35,8 +35,8 @@ const errorHandler = (err, req, res, next) => {
     message: error.message,
     ...(process.env.NODE_ENV === "development" ? { stack: error.stack } : {}), // Error stack traces should be visible in development for debugging
   };
+  console.log(process.env.NODE_ENV);
 
-  console.log(err);
 
   // Send error response
   return res.status(error.statusCode).json(response);

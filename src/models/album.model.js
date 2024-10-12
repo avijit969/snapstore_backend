@@ -4,13 +4,16 @@ const albumSchema = new Schema(
     {
         userId: {
             type: mongoose.Types.ObjectId,
-            ref:"User"
+            ref: "User"
         },
         name: {
             type: String,
-            require: String
+            require: true
         },
         description: {
+            type: String
+        },
+        coverImage: {
             type: String
         }
     },

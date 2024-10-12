@@ -3,16 +3,17 @@ import { Photo } from "../models/photo.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteImageByPublicId, uploadOnCloudinary } from "../utils/Cloudinary.js";
+import { ApiResponse } from "../utils/ApiResponse.js"
 
 // upload image ✅
-const   uploadImages = asyncHandler(async (req, res) => {
+const uploadImages = asyncHandler(async (req, res) => {
     const photos = req.files;
     const { description, location } = req.body;
     const userId = req.user._id;
     const uploadedPhotos = [];
 
     if (!photos || photos.length === 0) {
-        throw new ApiError(400,'No files uploaded')
+        throw new ApiError(400, 'No files uploaded')
     }
 
     for (const photo of photos) {
@@ -33,11 +34,28 @@ const   uploadImages = asyncHandler(async (req, res) => {
         photos: uploadedPhotos,
     });
 });
+const uploadSingleImages = asyncHandler(async (req, res) => {
+    const photo = req.file;
+    const { description, location, localAssetId, creationDateTime } = req.body;
+    const userId = req.user._id;
 
+    const result = await uploadOnCloudinary(photo.path);
+    const photoUploaded = await Photo.create({
+        userId,
+        url: result.url,
+        description,
+        location,
+        localAssetId,
+        creationDateTime: parseInt(creationDateTime),
+    });
+
+    res.status(200).json(new ApiResponse(200, photoUploaded, "Image uploaded successfully"));
+
+})
 // Get all photo by user id ✅
 const getAllPhotos = asyncHandler(async (req, res) => {
     const id = req.user._id;
-    const { page, limit} = req.query;
+    const { page, limit } = req.query;
 
     if (!page || !limit) {
         return res.status(400).json({ message: 'Page and limit are required' });
@@ -75,7 +93,7 @@ const deleteImage = asyncHandler(async (req, res) => {
 
 const addPhotoToAlbum = asyncHandler(async (req, res) => {
     const albumId = req.params.id;
-    const photoIdArray = req.body.photoIdArray; 
+    const photoIdArray = req.body.photoIdArray;
     // Find the album by ID
     const album = await Album.findById(albumId);
     if (!album) {
@@ -83,9 +101,9 @@ const addPhotoToAlbum = asyncHandler(async (req, res) => {
     }
 
     // Validate that all photo IDs exist and belong to the user
-    const photos = await Photo.find({ 
-        _id: { $in: photoIdArray }, 
-        userId: req.user._id 
+    const photos = await Photo.find({
+        _id: { $in: photoIdArray },
+        userId: req.user._id
     });
 
     if (photos.length !== photoIdArray.length) {
@@ -105,4 +123,26 @@ const addPhotoToAlbum = asyncHandler(async (req, res) => {
     });
 });
 
-export { uploadImages, getAllPhotos, deleteImage, addPhotoToAlbum };
+// gat photos by in the range of startCreationDateTime and endCreationDateTime
+const getPhotosByDateRange = asyncHandler(async (req, res) => {
+    const { startCreationDateTime, endCreationDateTime } = req.query;
+    if (!startCreationDateTime || !endCreationDateTime) {
+        return res.status(400).json(new ApiError(400, "startCreationDateTime and endCreationDateTime are required"));
+    }
+
+    const photos = await Photo.find({
+        creationDateTime: {
+            $lte: startCreationDateTime,
+            $gte: endCreationDateTime,
+        }
+    });
+
+    if (!photos.length) {
+        return res.status(404).json(new ApiError(404, "No photos found in this date range"));
+    }
+
+    res.status(200).json(new ApiResponse(200, photos, "All photos are fetched in this date range successfully"));
+
+})
+
+export { uploadImages, getAllPhotos, deleteImage, addPhotoToAlbum, getPhotosByDateRange, uploadSingleImages };
