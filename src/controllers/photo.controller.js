@@ -134,11 +134,12 @@ const getPhotosByDateRange = asyncHandler(async (req, res) => {
         creationDateTime: {
             $lte: startCreationDateTime,
             $gte: endCreationDateTime,
-        }
+        },
+        userId: req.user._id
     });
 
     if (!photos.length) {
-        return res.status(404).json(new ApiError(404, "No photos found in this date range"));
+        return res.status(403).json(new ApiError(403, "No photos found in this date range"));
     }
 
     res.status(200).json(new ApiResponse(200, photos, "All photos are fetched in this date range successfully"));

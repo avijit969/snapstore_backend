@@ -1,5 +1,5 @@
 {
-  "name": "sanpstore_backend",
+  "name": "snapstore_backend",
   "version": "1.0.0",
   "description": "backend for my learning project 02",
   "main": "index.js",
