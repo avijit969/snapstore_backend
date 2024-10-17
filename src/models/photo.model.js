@@ -17,6 +17,12 @@ const photoSchema = new Schema(
             type: String,
             required: true,
         },
+        height: {
+            type: Number,
+        },
+        width: {
+            type: Number,
+        },
         description: {
             type: String,
         },
@@ -34,7 +40,8 @@ const photoSchema = new Schema(
         creationDateTime: {
             type: Number,
             require: true
-        }
+        },
+
     },
     {
         timestamps: true,

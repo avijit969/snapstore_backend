@@ -36,13 +36,15 @@ const uploadImages = asyncHandler(async (req, res) => {
 });
 const uploadSingleImages = asyncHandler(async (req, res) => {
     const photo = req.file;
-    const { description, location, localAssetId, creationDateTime } = req.body;
+    const { description, location, localAssetId, creationDateTime, height, width } = req.body;
     const userId = req.user._id;
 
     const result = await uploadOnCloudinary(photo.path);
     const photoUploaded = await Photo.create({
         userId,
         url: result.url,
+        height,
+        width,
         description,
         location,
         localAssetId,
