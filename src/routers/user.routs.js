@@ -10,7 +10,8 @@ import {
   updateUserInfo,
   sendOtpForForgotPassword,
   verifyOtpForForgotPassword,
-  resendOtpForForgotPassword
+  resendOtpForForgotPassword,
+  forgotPassword
 } from "../controllers/user.controller.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middeleware.js"
@@ -27,6 +28,6 @@ router.route("/update-profile").patch(verifyJWT, upload.single("avatar"), update
 router.route("/send-otp-for-forgotPassword").post(verifyJWT, sendOtpForForgotPassword)
 router.route("/verify-otp-for-forgotPassword").post(verifyJWT, verifyOtpForForgotPassword)
 router.route("/resend-otp-for-forgotPassword").post(verifyJWT, resendOtpForForgotPassword)
-router.route("forgotPassword").post(verifyJWT)
+router.route("/forgot-password").post(verifyJWT, forgotPassword)
 
 export default router

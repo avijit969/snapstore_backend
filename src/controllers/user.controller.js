@@ -277,7 +277,19 @@ const resendOtpForForgotPassword = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "OTP has been sent to your email"))
 })
-
+// forgot password
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { password } = req.body
+  const user = await User.findById(req.user._id)
+  if (!user) {
+    throw new ApiError(400, "User with this email does not exist")
+  }
+  user.password = password
+  await user.save()
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password changed successfully"))
+})
 export {
   registerUser,
   loginUser,
@@ -290,4 +302,5 @@ export {
   sendOtpForForgotPassword,
   resendOtpForForgotPassword,
   verifyOtpForForgotPassword,
+  forgotPassword,
 }
