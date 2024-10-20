@@ -184,45 +184,57 @@ const changePassword = asyncHandler(async (req, res) => {
 })
 // update  user info ✅
 const updateUserInfo = asyncHandler(async (req, res) => {
-  const { email, fullName, username } = req.body
-  const avatarLocalPath = req.file?.path
+  const { email, fullName, username } = req.body;
+  const avatarLocalPath = req.file?.path;
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is missing")
+  // Find the current user
+  const currentUser = await User.findById(req.user._id);
+  if (!currentUser) {
+    throw new ApiError(404, "User not found");
   }
-  const avatar = await uploadOnCloudinary(avatarLocalPath)
 
-  if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading avatar")
-  }
-  // email validation
-  if (email) {
-    const user = await User.findOne({ email })
-    if (email === user.email) {
-      throw new ApiError(400, "Email already exists")
+  // Handle avatar upload if a new avatar is provided
+  let avatar;
+  if (avatarLocalPath) {
+    avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatar?.url) {
+      throw new ApiError(400, "Error while uploading avatar");
     }
   }
-  // username validation
-  if (username) {
-    const user = await User.findOne({ _id: req.user._id })
-    if (user.username === username) {
-      throw new ApiError(400, "Username is already exists try another one")
+
+  // Email validation: only check if the email is changing
+  if (email && email !== currentUser.email) {
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      throw new ApiError(400, "Email already exists");
     }
   }
-  let user = await User.findByIdAndUpdate(
+
+  // Username validation: only check if the username is changing
+  if (username && username !== currentUser.username) {
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      throw new ApiError(400, "Username already exists, try another one");
+    }
+  }
+
+  // Update user details
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
-        email,
-        fullName,
-        username,
-        avatar: avatar.url,
+        email: email || currentUser.email,
+        fullName: fullName || currentUser.fullName,
+        username: username || currentUser.username,
+        avatar: avatar?.url || currentUser.avatar,
       },
     },
     { new: true }
-  ).select("-password")
-  res.status(200).json(new ApiResponse(200, user, "ProfileUpdated Successfully"))
-})
+  ).select("-password");
+
+  res.status(200).json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
+});
+
 
 // forgot password with email OTP
 const sendOtpForForgotPassword = asyncHandler(async (req, res) => {

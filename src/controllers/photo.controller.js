@@ -70,7 +70,7 @@ const getAllPhotos = asyncHandler(async (req, res) => {
 
     const myAggregate = Photo.aggregate([
         { $match: { userId: id } },
-        { $sort: { creationDateTime: -1 } }
+        { $sort: { createdAt: -1 } }
     ]);
 
     Photo.aggregatePaginate(myAggregate, options)
