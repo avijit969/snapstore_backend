@@ -4,7 +4,8 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { uploadOnCloudinary } from "../utils/Cloudinary.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-
+import { compareOtp, generateOTP, hashOtp } from "../utils/hasOTP.js"
+import { sendOtpByMail } from "../utils/sendOtpByMail.js"
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId)
@@ -183,18 +184,98 @@ const changePassword = asyncHandler(async (req, res) => {
 })
 // update  user info ✅
 const updateUserInfo = asyncHandler(async (req, res) => {
-  const { email, fullName } = req.body
+  const { email, fullName, username } = req.body
+  const avatarLocalPath = req.file?.path
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing")
+  }
+  const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading avatar")
+  }
+  // email validation
+  if (email) {
+    const user = await User.findOne({ email })
+    if (email === user.email) {
+      throw new ApiError(400, "Email already exists")
+    }
+  }
+  // username validation
+  if (username) {
+    const user = await User.findOne({ _id: req.user._id })
+    if (user.username === username) {
+      throw new ApiError(400, "Username is already exists try another one")
+    }
+  }
   let user = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
         email,
         fullName,
+        username,
+        avatar: avatar.url,
       },
     },
     { new: true }
   ).select("-password")
-  res.status(200).json(new ApiResponse(200, user, "Updated Successfully"))
+  res.status(200).json(new ApiResponse(200, user, "ProfileUpdated Successfully"))
+})
+
+// forgot password with email OTP
+const sendOtpForForgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body
+  console.log(email)
+  const user = await User.findOne({ email })
+  console.log(user)
+  if (!user) {
+    throw new ApiError(400, "User with this email does not exist")
+  }
+  const otp = generateOTP()
+  const hashedOtp = hashOtp(otp.toString())
+  user.otp = hashedOtp
+  user.otp_expiry = Date.now() + 10 * 60 * 1000
+  await user.save()
+  sendOtpByMail(otp, email)
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "OTP has been sent to your email"))
+})
+
+// verify otp
+const verifyOtpForForgotPassword = asyncHandler(async (req, res) => {
+  const { otp } = req.body
+  const user = await User.findById(req.user._id)
+  if (!user) {
+    throw new ApiError(400, "User with this email does not exist")
+  }
+  const hashedOtp = user.otp
+  if (compareOtp(otp.toString(), hashedOtp)) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "OTP has been verified"))
+  }
+  else {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "Invalid OTP"))
+  }
+})
+
+// resend otp 
+const resendOtpForForgotPassword = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+  const otp = generateOTP()
+  const hashedOtp = hashOtp(otp.toString())
+  user.otp = hashedOtp
+  user.otp_expiry = Date.now() + 10 * 60 * 1000
+  await user.save()
+  sendOtpByMail(otp, user.email)
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "OTP has been sent to your email"))
 })
 
 export {
@@ -206,4 +287,7 @@ export {
   changePassword,
   updateUserInfo,
   isLoggedIn,
+  sendOtpForForgotPassword,
+  resendOtpForForgotPassword,
+  verifyOtpForForgotPassword,
 }

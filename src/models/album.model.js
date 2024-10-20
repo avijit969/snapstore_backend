@@ -15,7 +15,20 @@ const albumSchema = new Schema(
         },
         coverImage: {
             type: String
-        }
+        },
+        collaborators: [
+            {
+                userId: {
+                    type: mongoose.Types.ObjectId,
+                    ref: "User"
+                },
+                joinedAt: {
+                    type: Date,
+                    default: Date.now()
+                }
+            }
+
+        ]
     },
     {
         timestamps: true

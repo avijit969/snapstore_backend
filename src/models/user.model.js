@@ -18,9 +18,9 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    isAdmin:{
-      type:Boolean,
-      default:false
+    isAdmin: {
+      type: Boolean,
+      default: false
     },
     fullName: {
       type: String,
@@ -30,8 +30,8 @@ const userSchema = new Schema(
     },
     avatar: {
       type: String, // cloudinary url
-    //   required: true,
-    default:"https://img.freepik.com/free-vector/isolated-young-handsome-man-different-poses-white-background-illustration_632498-854.jpg?w=900&t=st=1714227599~exp=1714228199~hmac=3c7441e3d076b9d93e4c6acfaf17ff113290eef786ad9f1f61316ed7df630919"
+      //   required: true,
+      default: "https://img.freepik.com/free-vector/isolated-young-handsome-man-different-poses-white-background-illustration_632498-854.jpg?w=900&t=st=1714227599~exp=1714228199~hmac=3c7441e3d076b9d93e4c6acfaf17ff113290eef786ad9f1f61316ed7df630919"
     },
     password: {
       type: String,
@@ -40,6 +40,15 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
+    expoPushToken: {
+      type: String,
+    },
+    otp: {
+      type: String,
+    },
+    otp_expiry: {
+      type: Number,
+    },
 
   },
   {
@@ -47,10 +56,10 @@ const userSchema = new Schema(
   }
 )
 userSchema.pre("save", async function (next) {
-    if(!this.isModified("password")) return next();
+  if (!this.isModified("password")) return next();
 
-    this.password = await bcrypt.hash(this.password, 10)
-    next()
+  this.password = await bcrypt.hash(this.password, 10)
+  next()
 })
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password)
