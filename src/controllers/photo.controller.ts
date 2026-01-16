@@ -6,11 +6,10 @@ import { deleteImageByPublicId, uploadOnCloudinary } from "../utils/Cloudinary";
 import { ApiResponse } from "../utils/ApiResponse"
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticated-request.js"
+import redis, { invalidateUserPhotosCache } from "../utils/redis";
 
 // upload image ✅
 const uploadImages = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    // req.files is array | { [fieldname: string]: Multer.File[] } | undefined
-    // Assuming array upload
     const photos = req.files as Express.Multer.File[];
     const { description, location } = req.body;
     if (!req.user) throw new ApiError(401, "Not logged in");
@@ -34,6 +33,10 @@ const uploadImages = asyncHandler(async (req: AuthenticatedRequest, res: Respons
         uploadedPhotos.push(photoUploaded);
 
     }
+
+
+
+    await invalidateUserPhotosCache(userId.toString());
 
     res.status(200).json({
         message: 'Images uploaded successfully',
@@ -60,6 +63,8 @@ const uploadSingleImages = asyncHandler(async (req: AuthenticatedRequest, res: R
         creationDateTime: parseInt(creationDateTime),
     });
 
+    await invalidateUserPhotosCache(userId.toString());
+
     res.status(200).json(new ApiResponse(200, photoUploaded, "Image uploaded successfully"));
 
 })
@@ -78,13 +83,22 @@ const getAllPhotos = asyncHandler(async (req: AuthenticatedRequest, res: Respons
         limit: parseInt(limit as string, 10) || 30,
     };
 
+    const cacheKey = `photos:${id}:${options.page}:${options.limit}`;
+    const cachedData = await redis.get(cacheKey);
+
+    if (cachedData) {
+        console.log("Cache hit");
+        return res.status(200).json(JSON.parse(cachedData));
+    }
+    console.log("Cache miss");
     const myAggregate = Photo.aggregate([
         { $match: { userId: id } },
         { $sort: { createdAt: -1 } }
     ]);
 
     Photo.aggregatePaginate(myAggregate, options)
-        .then((result) => {
+        .then(async (result) => {
+            await redis.setex(cacheKey, 300, JSON.stringify(result));
             res.status(200).json(result);
         })
         .catch((error) => {
@@ -102,6 +116,7 @@ const deleteImage = asyncHandler(async (req: AuthenticatedRequest, res: Response
     }
     const publicId = photo.url.split('/').pop()?.split('.')[0] || "";
     await deleteImageByPublicId(publicId);
+    await invalidateUserPhotosCache(req.user._id.toString());
     res.status(200).json({ message: "Photo deleted successfully" });
 });
 
@@ -130,6 +145,8 @@ const addPhotoToAlbum = asyncHandler(async (req: AuthenticatedRequest, res: Resp
         { _id: { $in: photoIdArray } },
         { $set: { albumId: albumId } }
     );
+
+    await invalidateUserPhotosCache(req.user._id.toString());
 
     res.status(200).json({
         success: true,
