@@ -1,6 +1,7 @@
 import { Resend } from "resend"
-const resend = new Resend(process.env.RESEND_API_KEY)
-const sendMail = async (to, subject, html) => {
+const resend = new Resend("re_YLo3vq49_LE8JygYbdsFJsrj9aCyvEwio")
+
+const sendMail = async (to: string, subject: string, html: string) => {
     try {
         const { data, error } = await resend.emails.send({
             from: "SnapStore 📸 <snaptore@aviscodeverse.tech>",
@@ -22,6 +23,10 @@ const sendMail = async (to, subject, html) => {
         }
     } catch (error) {
         console.log(error)
+        return {
+            success: false,
+            message: "Internal server error in sending mail"
+        }
     }
 }
 

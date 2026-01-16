@@ -1,14 +1,18 @@
-import { Photo } from "../models/photo.model.js"
-import { User } from "../models/user.model.js"
-import { ApiError } from "../utils/ApiError.js"
-import { ApiResponse } from "../utils/ApiResponse.js"
-import { uploadOnCloudinary } from "../utils/Cloudinary.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
-import { compareOtp, generateOTP, hashOtp } from "../utils/hasOTP.js"
-import { sendOtpByMail } from "../utils/sendOtpByMail.js"
-const generateAccessAndRefreshTokens = async (userId) => {
+import { Photo } from "../models/photo.model"
+import { User, IUser } from "../models/user.model"
+import { ApiError } from "../utils/ApiError"
+import { ApiResponse } from "../utils/ApiResponse"
+import { uploadOnCloudinary } from "../utils/Cloudinary"
+import { asyncHandler } from "../utils/asyncHandler"
+import { compareOtp, generateOTP, hashOtp } from "../utils/hasOTP"
+import { sendOtpByMail } from "../utils/sendOtpByMail"
+import { Request, Response } from "express"
+import { AuthenticatedRequest } from "../types/authenticated-request"
+
+const generateAccessAndRefreshTokens = async (userId: string | unknown) => {
   try {
     const user = await User.findById(userId)
+    if (!user) throw new ApiError(500, "User not found")
     const accessToken = user.generateAccessToken()
     const refreshToken = user.generateRefreshToken()
 
@@ -25,7 +29,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 // user registration ✅
-const registerUser = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { fullName, email, username, password } = req.body
   console.log(fullName, email, username, password)
   if (
@@ -54,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 // user login  ✅
-const loginUser = asyncHandler(async (req, res) => {
+const loginUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { username, password } = req.body
   if (!username || !password) {
     throw new ApiError(400, "Username and Password is required !")
@@ -96,9 +100,12 @@ const loginUser = asyncHandler(async (req, res) => {
     )
 })
 // is logged in
-const isLoggedIn = asyncHandler(async (req, res) => {
+const isLoggedIn = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   console.log("this")
-  const user = await User.findById(req.user?._id)
+  if (!req.user) {
+      return res.json({ isLoggedIn: false })
+  }
+  const user = await User.findById(req.user._id)
   if (user) {
     res.json(user)
   } else {
@@ -107,9 +114,10 @@ const isLoggedIn = asyncHandler(async (req, res) => {
 })
 
 // user logOut ✅
-const logOut = asyncHandler(async (req, res) => {
-  User.findByIdAndUpdate(
-    req.user?._id,
+const logOut = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Not logged in")
+  await User.findByIdAndUpdate(
+    req.user._id,
     {
       $unset: {
         refreshToken: 1,
@@ -132,18 +140,20 @@ const logOut = asyncHandler(async (req, res) => {
 })
 
 // update avatar image ✅
-const updateAvatar = asyncHandler(async (req, res) => {
+const updateAvatar = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const avatarLocalPath = req.file?.path
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing")
   }
   const avatar = await uploadOnCloudinary(avatarLocalPath)
 
-  if (!avatar.url) {
+  if (!avatar?.url) {
     throw new ApiError(400, "Error while uploading avatar")
   }
+  if (!req.user) throw new ApiError(401, "Not logged in");
+
   const user = await User.findByIdAndUpdate(
-    req.user?._id,
+    req.user._id,
     {
       $set: {
         avatar: avatar.url,
@@ -156,8 +166,9 @@ const updateAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Avatar image is updated successfully"))
 })
 //get user details ✅
-const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user?._id).select(
+const getProfile = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Not logged in");
+  const user = await User.findById(req.user._id).select(
     "-password -refreshToken"
   )
   if (!user) {
@@ -169,9 +180,11 @@ const getProfile = asyncHandler(async (req, res) => {
 })
 
 //change user password ✅
-const changePassword = asyncHandler(async (req, res) => {
+const changePassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { oldPassword, newPassword } = req.body
-  const user = await User.findById(req.user?._id)
+  if (!req.user) throw new ApiError(401, "Not logged in");
+  const user = await User.findById(req.user._id)
+  if (!user) throw new ApiError(404, "User not found")
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
   if (!isPasswordCorrect) {
     throw new ApiError(401, "Incorrect current Password")
@@ -183,9 +196,10 @@ const changePassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "password changed successfully"))
 })
 // update  user info ✅
-const updateUserInfo = asyncHandler(async (req, res) => {
+const updateUserInfo = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { email, fullName, username } = req.body;
   const avatarLocalPath = req.file?.path;
+  if (!req.user) throw new ApiError(401, "Not logged in");
 
   // Find the current user
   const currentUser = await User.findById(req.user._id);
@@ -237,7 +251,7 @@ const updateUserInfo = asyncHandler(async (req, res) => {
 
 
 // forgot password with email OTP
-const sendOtpForForgotPassword = asyncHandler(async (req, res) => {
+const sendOtpForForgotPassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { email } = req.body
   console.log(email)
   const user = await User.findOne({ email })
@@ -257,13 +271,14 @@ const sendOtpForForgotPassword = asyncHandler(async (req, res) => {
 })
 
 // verify otp
-const verifyOtpForForgotPassword = asyncHandler(async (req, res) => {
+const verifyOtpForForgotPassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { otp } = req.body
+  if (!req.user) throw new ApiError(401, "Not logged in/User not found in req");
   const user = await User.findById(req.user._id)
   if (!user) {
     throw new ApiError(400, "User with this email does not exist")
   }
-  const hashedOtp = user.otp
+  const hashedOtp = user.otp || ""
   if (compareOtp(otp.toString(), hashedOtp)) {
     return res
       .status(200)
@@ -277,8 +292,10 @@ const verifyOtpForForgotPassword = asyncHandler(async (req, res) => {
 })
 
 // resend otp 
-const resendOtpForForgotPassword = asyncHandler(async (req, res) => {
+const resendOtpForForgotPassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new ApiError(401, "Not logged in/User not found in req");
   const user = await User.findById(req.user._id)
+  if (!user) throw new ApiError(404, "User not found")
   const otp = generateOTP()
   const hashedOtp = hashOtp(otp.toString())
   user.otp = hashedOtp
@@ -290,8 +307,9 @@ const resendOtpForForgotPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "OTP has been sent to your email"))
 })
 // forgot password
-const forgotPassword = asyncHandler(async (req, res) => {
+const forgotPassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const { password } = req.body
+  if (!req.user) throw new ApiError(401, "Not logged in/User not found in req");
   const user = await User.findById(req.user._id)
   if (!user) {
     throw new ApiError(400, "User with this email does not exist")

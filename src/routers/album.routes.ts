@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { addAlbumCoverImage, createAlbum, deleteAlbum, editAlbum, getAlbumPhotos, getAllAlbums } from "../controllers/album.controller.js";
-import { addPhotoToAlbum } from "../controllers/photo.controller.js";
+import { verifyJWT } from "../middlewares/auth.middleware";
+import { addAlbumCoverImage, createAlbum, deleteAlbum, editAlbum, getAlbumPhotos, getAllAlbums } from "../controllers/album.controller";
+import { addPhotoToAlbum } from "../controllers/photo.controller";
 
 const router = Router()
 router.route('/create-album').post(verifyJWT, createAlbum)

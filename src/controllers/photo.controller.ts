@@ -1,14 +1,19 @@
-import { Album } from "../models/album.model.js";
-import { Photo } from "../models/photo.model.js";
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { deleteImageByPublicId, uploadOnCloudinary } from "../utils/Cloudinary.js";
-import { ApiResponse } from "../utils/ApiResponse.js"
+import { Album } from "../models/album.model";
+import { Photo } from "../models/photo.model";
+import { ApiError } from "../utils/ApiError";
+import { asyncHandler } from "../utils/asyncHandler";
+import { deleteImageByPublicId, uploadOnCloudinary } from "../utils/Cloudinary";
+import { ApiResponse } from "../utils/ApiResponse"
+import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../types/authenticated-request.js"
 
 // upload image ✅
-const uploadImages = asyncHandler(async (req, res) => {
-    const photos = req.files;
+const uploadImages = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    // req.files is array | { [fieldname: string]: Multer.File[] } | undefined
+    // Assuming array upload
+    const photos = req.files as Express.Multer.File[];
     const { description, location } = req.body;
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const userId = req.user._id;
     const uploadedPhotos = [];
 
@@ -18,6 +23,7 @@ const uploadImages = asyncHandler(async (req, res) => {
 
     for (const photo of photos) {
         const result = await uploadOnCloudinary(photo.path);
+        if (!result) continue;
         const photoUploaded = await Photo.create({
             userId,
             url: result.url,
@@ -34,15 +40,18 @@ const uploadImages = asyncHandler(async (req, res) => {
         photos: uploadedPhotos,
     });
 });
-const uploadSingleImages = asyncHandler(async (req, res) => {
+const uploadSingleImages = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const photo = req.file;
     const { description, location, localAssetId, creationDateTime, height, width } = req.body;
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const userId = req.user._id;
+
+    if (!photo) throw new ApiError(400, "File missing");
 
     const result = await uploadOnCloudinary(photo.path);
     const photoUploaded = await Photo.create({
         userId,
-        url: result.url,
+        url: result!.url,
         height,
         width,
         description,
@@ -55,7 +64,8 @@ const uploadSingleImages = asyncHandler(async (req, res) => {
 
 })
 // Get all photo by user id ✅
-const getAllPhotos = asyncHandler(async (req, res) => {
+const getAllPhotos = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const id = req.user._id;
     const { page, limit } = req.query;
 
@@ -64,8 +74,8 @@ const getAllPhotos = asyncHandler(async (req, res) => {
     }
 
     const options = {
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 30,
+        page: parseInt(page as string, 10) || 1,
+        limit: parseInt(limit as string, 10) || 30,
     };
 
     const myAggregate = Photo.aggregate([
@@ -82,21 +92,23 @@ const getAllPhotos = asyncHandler(async (req, res) => {
         });
 });
 // delete by id ✔️
-const deleteImage = asyncHandler(async (req, res) => {
+const deleteImage = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
 
     const _id = req.params.id;
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const photo = await Photo.findOneAndDelete({ _id, userId: req.user._id });
     if (!photo) {
         return res.status(404).json({ message: "Photo not found" });
     }
-    const publicId = photo.url.split('/').pop().split('.')[0];
+    const publicId = photo.url.split('/').pop()?.split('.')[0] || "";
     await deleteImageByPublicId(publicId);
     res.status(200).json({ message: "Photo deleted successfully" });
 });
 
-const addPhotoToAlbum = asyncHandler(async (req, res) => {
+const addPhotoToAlbum = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const albumId = req.params.id;
     const photoIdArray = req.body.photoIdArray;
+    if (!req.user) throw new ApiError(401, "Not logged in");
     // Find the album by ID
     const album = await Album.findById(albumId);
     if (!album) {
@@ -127,16 +139,17 @@ const addPhotoToAlbum = asyncHandler(async (req, res) => {
 });
 
 // gat photos by in the range of startCreationDateTime and endCreationDateTime
-const getPhotosByDateRange = asyncHandler(async (req, res) => {
+const getPhotosByDateRange = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { startCreationDateTime, endCreationDateTime } = req.query;
     if (!startCreationDateTime || !endCreationDateTime) {
         return res.status(400).json(new ApiError(400, "startCreationDateTime and endCreationDateTime are required"));
     }
+    if (!req.user) throw new ApiError(401, "Not logged in");
 
     const photos = await Photo.find({
         creationDateTime: {
-            $lte: startCreationDateTime,
-            $gte: endCreationDateTime,
+            $lte: parseInt(startCreationDateTime as string),
+            $gte: parseInt(endCreationDateTime as string),
         },
         userId: req.user._id
     });

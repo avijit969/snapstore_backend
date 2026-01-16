@@ -1,15 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document, AggregatePaginateModel } from "mongoose";
 import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-const photoSchema = new Schema(
+export interface IPhoto extends Document {
+    userId: mongoose.Types.ObjectId;
+    albumId?: mongoose.Types.ObjectId;
+    url: string;
+    height?: number;
+    width?: number;
+    description?: string;
+    location?: string;
+    isFavorite: boolean;
+    localAssetId: string;
+    creationDateTime: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const photoSchema = new Schema<IPhoto>(
     {
         userId: {
-            type: Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
         albumId: {
-            type: Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId,
             ref: "Album",
             // required: true,
         },
@@ -39,7 +54,7 @@ const photoSchema = new Schema(
         },
         creationDateTime: {
             type: Number,
-            require: true
+            required: true
         },
 
     },
@@ -47,6 +62,8 @@ const photoSchema = new Schema(
         timestamps: true,
     }
 );
-photoSchema.plugin(aggregatePaginate)
+photoSchema.plugin(aggregatePaginate);
 
-export const Photo = mongoose.model('Photo', photoSchema);
+interface IPhotoModel extends AggregatePaginateModel<IPhoto> {}
+
+export const Photo = mongoose.model<IPhoto, IPhotoModel>('Photo', photoSchema);

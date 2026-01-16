@@ -12,9 +12,9 @@ import {
   verifyOtpForForgotPassword,
   resendOtpForForgotPassword,
   forgotPassword
-} from "../controllers/user.controller.js"
-import { verifyJWT } from "../middlewares/auth.middleware.js"
-import { upload } from "../middlewares/multer.middeleware.js"
+} from "../controllers/user.controller"
+import { verifyJWT } from "../middlewares/auth.middleware"
+import { upload } from "../middlewares/multer.middleware"
 const router = Router()
 router.route("/registerUser").post(registerUser)
 router.route("/login").post(loginUser)

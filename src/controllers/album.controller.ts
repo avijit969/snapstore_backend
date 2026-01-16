@@ -1,13 +1,15 @@
-import { json } from "express";
-import { Album } from "../models/album.model.js";
-import { Photo } from "../models/photo.model.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
+import { Album } from "../models/album.model";
+import { Photo } from "../models/photo.model";
+import { ApiResponse } from "../utils/ApiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+import { Response } from "express";
+import { AuthenticatedRequest } from "../types/authenticated-request"
 
 
 // crate the album of photos
-const createAlbum = asyncHandler(async (req, res) => {
+const createAlbum = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const _id = req.user._id;
     const { name, description } = req.body;
     if (!name || !description) {
@@ -18,7 +20,8 @@ const createAlbum = asyncHandler(async (req, res) => {
 })
 
 // delete album
-const deleteAlbum = asyncHandler(async (req, res) => {
+const deleteAlbum = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const _id = req.user._id;
     const albumId = req.params.id;
     const album = await Album.findByIdAndDelete({ _id: albumId, userId: _id });
@@ -28,14 +31,16 @@ const deleteAlbum = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, album, "album deleted successfully"));
 })
 // get all albums
-const getAllAlbums = asyncHandler(async (req, res) => {
+const getAllAlbums = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const _id = req.user._id;
     const albums = await Album.find({ userId: _id });
     res.status(200).json(new ApiResponse(200, albums, "all albums retrieved successfully"));
 })
 
 // get all photo of the album
-const getAlbumPhotos = asyncHandler(async (req, res) => {
+const getAlbumPhotos = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Not logged in");
     const userId = req.user._id; // ID of the current user
     const albumId = req.params.albumId; // ID of the album from the request parameters
 
@@ -49,7 +54,7 @@ const getAlbumPhotos = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, photos, "All photos of the album"));
 });
 
-const addAlbumCoverImage = asyncHandler(async (req, res) => {
+const addAlbumCoverImage = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const albumId = req.params.id;
     const album = await Album.findById(albumId);
     if (!album) {
@@ -64,7 +69,7 @@ const addAlbumCoverImage = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, album, "Album cover image added successfully"));
 })
 
-const editAlbum = asyncHandler(async (req, res) => {
+const editAlbum = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const albumId = req.params.id;
     const album = await Album.findById(albumId);
     if (!album) {

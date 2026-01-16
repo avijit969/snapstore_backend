@@ -1,6 +1,6 @@
-import { sendMail } from "./SendMail.js"
+import { sendMail } from "./SendMail"
 
-const sendOtpByMail = async (otp, email) => {
+const sendOtpByMail = async (otp: number | string, email: string) => {
     const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
 

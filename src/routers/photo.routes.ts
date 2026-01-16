@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middeleware.js";
+import { verifyJWT } from "../middlewares/auth.middleware";
+import { upload } from "../middlewares/multer.middleware";
 import {
     deleteImage,
     getAllPhotos,
     getPhotosByDateRange,
     uploadImages,
     uploadSingleImages
-} from "../controllers/photo.controller.js";
+} from "../controllers/photo.controller";
 
 const router = Router()
 router.route("/upload").post(verifyJWT, upload.array('photos', 10), uploadImages)
