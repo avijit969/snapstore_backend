@@ -15,6 +15,7 @@ COPY . .
 
 # Build the TypeScript code
 RUN npm run build
+COPY src/templates dist/templates
 
 # Expose the port the app runs on
 EXPOSE 8000
