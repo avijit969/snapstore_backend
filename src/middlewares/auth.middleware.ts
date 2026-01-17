@@ -12,6 +12,7 @@ interface DecodedToken {
 
 export const verifyJWT = asyncHandler(async (req: AuthenticatedRequest, _, next: NextFunction) => {
     try {
+      console.log("Cookies : ",JSON.stringify(req.cookies,null,2))
       const token =
         req.cookies?.accessToken ||
         req.header("Authorization")?.replace("Bearer ", "");

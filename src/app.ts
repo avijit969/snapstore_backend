@@ -11,7 +11,7 @@ import photoRouter from './routers/photo.routes';
 import albumRouter from './routers/album.routes';
 import healthRouter from './routers/health.routes';
 import { errorHandler } from "./middlewares/error.middlewares";
-
+import morgan from "morgan";
 const app = express();
 
 app.use(cors({
@@ -35,7 +35,7 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
-
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the SnapStore API" });
 });
