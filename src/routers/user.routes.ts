@@ -2,7 +2,6 @@ import { Router } from "express"
 import {
   changePassword,
   getProfile,
-  isLoggedIn,
   logOut,
   loginUser,
   registerUser,
@@ -11,14 +10,15 @@ import {
   sendOtpForForgotPassword,
   verifyOtpForForgotPassword,
   resendOtpForForgotPassword,
-  forgotPassword
+  forgotPassword,
+  getUser
 } from "../controllers/user.controller"
 import { verifyJWT } from "../middlewares/auth.middleware"
 import { upload } from "../middlewares/multer.middleware"
 const router = Router()
 router.route("/registerUser").post(registerUser)
 router.route("/login").post(loginUser)
-router.route("/isLoggedIn").get(verifyJWT, isLoggedIn)
+router.route("/get-user").get(verifyJWT, getUser)
 router.route("/logout").post(verifyJWT, logOut)
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateAvatar)
 router.route("/profile").get(verifyJWT, getProfile)

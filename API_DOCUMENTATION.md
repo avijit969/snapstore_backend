@@ -80,11 +80,28 @@ Most endpoints are protected and require authentication.
   }
   ```
 
-### Check Login Status
-- **Endpoint:** `/users/isLoggedIn`
+### Get Current User
+- **Endpoint:** `/users/get-user`
 - **Method:** `GET`
 - **Headers:** `Authorization: Bearer <token>`
-- **Response:** Returns user object if logged in, else `{ "isLoggedIn": false }`.
+- **Response:**
+  ```json
+  {
+    "statusCode": 200,
+    "data": { 
+      "_id": "65a123bcde456fgh7890ijkl",
+      "username": "aviji",
+      "email": "aviji@example.com",
+      "fullName": "Avijit",
+      "avatar": "http://res.cloudinary.com/demo/image/upload/v1/sample.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "__v": 0
+    },
+    "message": "User fetched successfully",
+    "success": true
+  }
+  ```
 
 ### Logout User
 - **Endpoint:** `/users/logout`
@@ -124,7 +141,16 @@ Most endpoints are protected and require authentication.
   ```json
   {
     "statusCode": 200,
-    "data": { ...user },
+    "data": {
+      "_id": "65a123bcde456fgh7890ijkl",
+      "username": "avi",
+      "email": "avi@example.com",
+      "fullName": "John Doe",
+      "avatar": "http://res.cloudinary.com/demo/image/upload/v1/sample.jpg",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "__v": 0
+    },
     "message": "Successfully fetched the profile!",
     "success": true
   }

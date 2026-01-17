@@ -100,18 +100,14 @@ const loginUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) 
       )
     )
 })
-// is logged in
-const isLoggedIn = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  console.log("this")
-  if (!req.user) {
-      return res.json({ isLoggedIn: false })
+
+const getUser=asyncHandler(async(req:AuthenticatedRequest,res:Response)=>{
+  const userId = req.user?._id;
+  const user=await User.findById(userId).select("-password -refreshToken")
+  if(!user){
+    throw new ApiError(404,"User not found")
   }
-  const user = await User.findById(req.user._id)
-  if (user) {
-    res.json(user)
-  } else {
-    res.json({ isLoggedIn: false })
-  }
+  return res.status(200).json(new ApiResponse(200,user,"User fetched successfully"))
 })
 
 // user logOut ✅
@@ -329,7 +325,7 @@ export {
   getProfile,
   changePassword,
   updateUserInfo,
-  isLoggedIn,
+  getUser,
   sendOtpForForgotPassword,
   resendOtpForForgotPassword,
   verifyOtpForForgotPassword,
